@@ -930,7 +930,7 @@ jobs:
         run: |
           cd "$KERNEL_ROOT"
           SUFFIX="Coolapk@GCross-Droidspaces"
-          for f in ./scripts/setlocalversion; do
+          for f in ./common/scripts/setlocalversion; do
               sed -i "\$s|echo \"\\\$res\"|echo \"-$SUFFIX\"|" "$f"
           done
           
