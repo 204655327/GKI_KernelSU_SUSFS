@@ -907,7 +907,7 @@ jobs:
           CONFIG_KSU_SUSFS_SUS_MAP=y
           EOF
 
-      - name: 注入DroidSpaces内核ABI补丁
+      - name: 注入DroidSpaces配置
         run: |
           cd "$KERNEL_ROOT"
           cd ./common
@@ -924,7 +924,16 @@ jobs:
           echo "CONFIG_UTS_NS=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_USER_NS=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_DEVTMPFS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DEVTMPFS_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig        
+          echo "CONFIG_DEVTMPFS_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+      
+      - name: 修改内核版本名称
+        run: |
+          cd "$KERNEL_ROOT"
+          SUFFIX="Coolapk@GCross-Droidspaces"
+          for f in ./scripts/setlocalversion; do
+              sed -i "\$s|echo \"\\\$res\"|echo \"-$SUFFIX\"|" "$f"
+          done
+          
       
 
       - name: 配置内核名称
