@@ -179,6 +179,7 @@ jobs:
       use_rekernel: ${{ inputs.use_rekernel || false }}
       supp_op: ${{ inputs.supp_op || false }}
       enable_susfs: ${{ !inputs.cancel_susfs }}
+      use_ntsync: ${{ inputs.use_ntsync || 'off' }}
       droidspaces: ${{ inputs.droidspaces || 'off' }}
 
   # 仅在直接触发时运行，从 main.yml 调用时跳过
