@@ -668,7 +668,7 @@ jobs:
         if: inputs.droidspaces != 'off'
         run: |
           git clone --depth 1 https://github.com/Goldzxcbug/Droidspaces_Kernel_patch.git /tmp/Droidspaces_Kernel_patch
-          echo "NTsync_PATCHES=/tmp/Droidspaces_Kernel_patch/NTsync" >> $GITHUB_ENV
+          echo "NTSYNC_PATCHES=/tmp/Droidspaces_Kernel_patch/NTsync" >> $GITHUB_ENV
       
       - name: 备份基准 defconfig
         run: cp "$DEFCONFIG" "$DEFCONFIG.orig"
@@ -774,6 +774,50 @@ jobs:
 
           echo "Droidspaces 集成完成"
 
+      - name: 集成 NTsync 支持
+        if: inputs.use_ntsync != 'off'
+        working-directory: ${{ env.KERNEL_ROOT }}/common
+        run: |
+          KERNEL_VER="${{ inputs.kernel_version }}"
+          SLOT="${{ inputs.use_ntsync }}"
+          
+          PATCH_FILE1="$NTSYNC_PATCHES/ntsync_base.patch"
+          
+          # 选择补丁
+          case "$KERNEL_VER" in
+            6.12)
+              PATCH_FILE2="$NTSYNC_PATCHES/ntsync_compat_android16-6.12.patch"
+              ;;
+            6.6)
+              PATCH_FILE2="$NTSYNC_PATCHES/ntsync_compat_android15-6.6.patch"
+              ;;
+            6.1)
+              PATCH_FILE2="$NTSYNC_PATCHES/ntsync_compat_android14-6.1.patch"
+              ;;
+            5.15)
+              PATCH_FILE2="$NTSYNC_PATCHES/ntsync_compat_android13-5.15.patch"
+              ;;
+            5.10)
+              PATCH_FILE2="$NTSYNC_PATCHES/ntsync_compat_android12-5.10.patch"
+              ;;
+            *)
+              echo "::warning::Droidspaces: 未适配的内核版本 $KERNEL_VER，跳过补丁"
+              exit 0
+              ;;
+          esac
+          if ! patch -p1 --forward < "$PATCH_FILE1"; then
+            echo "NTsync base补丁应用失败，可能已应用或上下文不匹配"
+          fi
+          
+          esac
+          if ! patch -p1 --forward < "$PATCH_FILE2"; then
+            echo ":内核对应版本NTsync补丁应用失败，可能已应用或上下文不匹配"
+          fi
+
+          echo "添加 NTsync 内核配置..."
+          echo "CONFIG_NTSYNC=y" >> ./arch/arm64/configs/gki_defconfig
+          echo "NTsync 集成完成"
+          
       - name: 应用 Unicode 绕过修复
         if: inputs.enable_susfs
         working-directory: ${{ env.KERNEL_ROOT }}/common
