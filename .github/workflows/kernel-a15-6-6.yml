@@ -113,6 +113,10 @@ on:
       supp_op:
         required: false
         type: boolean
+      use_ntsync:
+        required: false
+        type: boolean
+        default: false
       droidspaces:
         required: false
         type: string
