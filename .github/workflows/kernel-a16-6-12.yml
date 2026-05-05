@@ -65,6 +65,10 @@ on:
         required: false
         type: boolean
         default: false
+      use_ntsync:
+        description: "启用 NTsync"
+        type: boolean
+        default: false
       droidspaces:
         description: "Droidspaces 容器支持"
         required: false
@@ -107,6 +111,10 @@ on:
       supp_op:
         required: false
         type: boolean
+      use_ntsync:
+        required: false
+        type: boolean
+        default: false
       droidspaces:
         required: false
         type: string
@@ -151,6 +159,7 @@ jobs:
       use_rekernel: ${{ inputs.use_rekernel || false }}
       supp_op: ${{ inputs.supp_op || false }}
       enable_susfs: ${{ !inputs.cancel_susfs }}
+      use_ntsync: ${{ inputs.use_ntsync || 'off' }}
       droidspaces: ${{ inputs.droidspaces || 'off' }}
 
   # 仅在直接触发时运行，从 main.yml 调用时跳过
