@@ -66,6 +66,10 @@ on:
         required: false
         type: boolean
         default: false
+      use_ntsync:
+        description: "启用 NTsync"
+        type: boolean
+        default: false
       droidspaces:
         required: false
         type: string
