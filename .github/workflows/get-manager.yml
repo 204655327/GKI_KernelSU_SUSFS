@@ -153,7 +153,7 @@ jobs:
             # 1. 获取指定顺序的成功构建的ID
 
             # 对于 Next 变体，添加 branch 参数过滤
-            if [[ "${{ inputs.kernelsu_variant }}" == "Next" || "${{ inputs.kernelsu_variant }}" == "Official"]]; then
+            if [[ "${{ inputs.kernelsu_variant }}" == "Next" || "${{ inputs.kernelsu_variant }}" == "Official" ]]; then
               BUILD_ID=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                 "https://api.github.com/repos/$REPO/actions/workflows/$FILENAME/runs?branch=$BRANCH&status=success&per_page=1" |
                 jq -r '.workflow_runs[0].id')
