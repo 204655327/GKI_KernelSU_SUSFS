@@ -92,6 +92,11 @@ on:
         required: false
         type: string
         default: "上传全部"
+      export_source_tarball:
+        description: "上传内核源码 tarball (src.tar.gz)"
+        required: false
+        type: boolean
+        default: true
       droidspaces_ntsync:
         required: false
         type: boolean
@@ -131,6 +136,7 @@ jobs:
           echo "Droidspaces   : ${{ inputs.droidspaces }}"
           echo "NTSync        : ${{ inputs.droidspaces_ntsync }}"
           echo "产物上传模式  : ${{ inputs.artifact_upload_mode }}"
+          echo "源码压缩包导出: ${{ inputs.export_source_tarball }}"
           echo "Stock Config  : 自动检测 config/stock_defconfig"
           echo "========================================"
 
@@ -439,6 +445,36 @@ jobs:
 
           echo "REMOTE_BRANCH=$REMOTE_BRANCH" >> $GITHUB_ENV
           echo "TAG_FALLBACK=$TAG_FALLBACK" >> $GITHUB_ENV
+
+      # 在源码同步完成、任何补丁/修改应用之前，打包一份纯净的 GKI 内核源码。
+      # 仅包含 common/ 内核源码本体；build/、tools/ 等编译工具目录与 .git 均不打包。
+      - name: 打包纯净内核源码
+        if: inputs.export_source_tarball
+        run: |
+          SRC_DIR="$KERNEL_ROOT/common"
+
+          # 源码完整性确认：repo sync 成功后 common/ 必须是完整内核树
+          if [ ! -f "$SRC_DIR/Makefile" ]; then
+            echo "::error::源码完整性校验失败：未找到 $SRC_DIR/Makefile，源码不完整"
+            exit 1
+          fi
+
+          GKI_COMMIT=$(git -C "$SRC_DIR" rev-parse HEAD 2>/dev/null || echo "unknown")
+          echo "纯净源码对应的 GKI 提交: $GKI_COMMIT"
+
+          TARBALL_NAME="${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-src.tar.gz"
+          SOURCE_TARBALL="$GITHUB_WORKSPACE/$TARBALL_NAME"
+          echo "SOURCE_TARBALL=$SOURCE_TARBALL" >> $GITHUB_ENV
+
+          echo "开始打包纯净源码（仅 common/，排除 .git）..."
+          tar -C "$KERNEL_ROOT" --exclude='common/.git' -czf "$SOURCE_TARBALL" common/
+
+          echo "生成 SHA256 校验和..."
+          (cd "$GITHUB_WORKSPACE" && sha256sum "$TARBALL_NAME") > "$SOURCE_TARBALL.sha256"
+          cat "$SOURCE_TARBALL.sha256"
+
+          echo "源码压缩包大小: $(du -h "$SOURCE_TARBALL" | cut -f1)"
+          df -h "$GITHUB_WORKSPACE" | tail -n +2 || true
 
       - name: 应用 Stock Config 伪装
         run: |
@@ -1769,6 +1805,19 @@ jobs:
               echo "$REL" >> "$REJECTS_DIR/index.txt"
             done
           fi
+
+      # 源码 tarball 与编译产物一起上传；名称携带 _kernel- 前缀，
+      # 使 main.yml release 任务的「上传内核产物」通配能将源码包随编译产物一并发布
+      - name: 上传纯净内核源码
+        if: success() && inputs.export_source_tarball && env.SOURCE_TARBALL != ''
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ inputs.ksu_variant }}_kernel-${{ env.CONFIG }}-src
+          path: |
+            ${{ env.SOURCE_TARBALL }}
+            ${{ env.SOURCE_TARBALL }}.sha256
+          if-no-files-found: error
+          compression-level: 0
 
       # 产物名不带 _kernel- 前缀，避免 release 的「上传内核产物」通配到补丁文件
       - name: 上传 SUSFS 集成补丁
